@@ -137,9 +137,9 @@ function checkConfig(){
 function buildLambdaZip(next){
     var jsFilter = filter('**/*.js', {restore:true});
     gulp.src("src/**/*")
-        .pipe(jsFilter)
-        .pipe(uglify())
-        .pipe(jsFilter.restore)
+        // .pipe(jsFilter)
+        // .pipe(uglify())
+        // .pipe(jsFilter.restore)
         .pipe(zip(lambda_config.ConfigOptions.FunctionName+".zip"))
         .pipe(data(function(data) {
             next(data.contents);
