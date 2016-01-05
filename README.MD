@@ -2,6 +2,8 @@
 
 Resizing images (creating thumbnails) in response to S3 Image upload
 
+![diagram1](https://raw.githubusercontent.com/chrismilleruk/aws-lambda-image-resize/master/diagram1.png)
+
 ## Attribution
 
 Generated with [`slush aws-lambda`](https://github.com/giowe/slush-aws-lambda)
