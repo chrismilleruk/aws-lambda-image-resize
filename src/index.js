@@ -70,6 +70,7 @@ exports.handler = function(event, context) {
       });
     },
     function upload(contentType, data, next) {
+      console.log('upload', dstBucket, dstKey, contentType, data.length);
       // Stream the transformed image to a different S3 bucket.
       s3.putObject({
         Bucket      : dstBucket,
@@ -77,40 +78,37 @@ exports.handler = function(event, context) {
         Body        : data,
         ContentType : contentType
       }, next);
+    },
+    function presign(data, next) {
+      console.log('presign', data);
+
+      // Get a presigned URL valid for 15 mins.
+      s3.getSignedUrl('getObject', {
+        Bucket      : dstBucket,
+        Key         : dstKey
+      }, next);
     }],
-    function (err) {
+    function (err, url) {
       if (err) {
         console.error(
           'Unable to resize ' + srcBucket + '/' + srcKey +
           ' and upload to ' + dstBucket + '/' + dstKey +
           ' due to an error: ' + err
         );
-        context.done();
+        context.fail(err);
       } else {
         console.log(
           'Successfully resized ' + srcBucket + '/' + srcKey +
           ' and uploaded to ' + dstBucket + '/' + dstKey
         );
 
-        // hash-fileId.ext
-        var fileMatch = srcKey.match(/\-([^.]*)\./);
-
-        if (!fileMatch) {
-          context.done();
-        } else {
-          var fileId = fileMatch[1];
-
-          var bucketConfig = config.buckets[srcBucket];
-          request.post(bucketConfig.host + '/api/files/' + fileId + '/thumbnail', {
-            form : {
-              bucket : bucketConfig.bucket,
-              secret : bucketConfig.secret
-            }
-          }, function(err, response, body) {
-            err && console.log('could not make request back: ' + err);
-            context.done();
-          });
-        }
+        context.succeed({
+          srcBucket: srcBucket,
+          srcKey: srcKey,
+          dstBucket: dstBucket,
+          dstKey: dstKey,
+          url: url
+        });
       }
     }
   );
