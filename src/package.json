@@ -1,11 +1,12 @@
 {
-  "name": "",
-  "description": "",
-  "author": "Chris Miller <chrismilleruk@gmail.com>",
-  "contributors": [{
-    "name": "Chris Miller",
-    "email": "chrismilleruk@gmail.com"
-  }],
-  "dependencies": {
-  }
+    "name": "my-third-lambda",
+    "description": "Image resizing in a Lambda",
+    "author": "Chris Miller <chrismilleruk@gmail.com>",
+    "contributors": [
+        {
+            "name": "Chris Miller",
+            "email": "chrismilleruk@gmail.com"
+        }
+    ],
+    "dependencies": {}
 }

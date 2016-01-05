@@ -1,0 +1,12 @@
+{
+    "Region": "eu-west-1",
+    "Runtime": "nodejs",
+    "ConfigOptions": {
+        "FunctionName": "my-third-lambda",
+        "Description": "Image resizing in a Lambda",
+        "Role": "arn:aws:iam::[uid]:role/lambda-execution",
+        "Handler": "index.handler",
+        "MemorySize": "128",
+        "Timeout": "3"
+    }
+}
