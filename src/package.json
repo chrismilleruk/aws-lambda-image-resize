@@ -1,12 +1,17 @@
 {
-    "name": "my-third-lambda",
-    "description": "Image resizing in a Lambda",
-    "author": "Chris Miller <chrismilleruk@gmail.com>",
-    "contributors": [
-        {
-            "name": "Chris Miller",
-            "email": "chrismilleruk@gmail.com"
-        }
-    ],
-    "dependencies": {}
+  "name": "s3-triggered-thumbnail",
+  "description": "Image resizing in a Lambda",
+  "author": "Chris Miller <chrismilleruk@gmail.com>",
+  "contributors": [
+    {
+      "name": "Chris Miller",
+      "email": "chrismilleruk@gmail.com"
+    }
+  ],
+  "dependencies": {
+    "async": "^1.5.1",
+    "gm": "^1.21.1",
+    "request": "^2.67.0",
+    "util": "^0.10.3"
+  }
 }
