@@ -9,7 +9,11 @@ var gulp = require('gulp'),
     uglify = require('gulp-uglify'),
     filter = require('gulp-filter'),
     inquirer = require('inquirer'),
-    AWS = require('aws-sdk');
+    AWS = require('aws-sdk'),
+    sourcemaps = require('gulp-sourcemaps'),
+    babel = require('gulp-babel');
+
+var debug = require('gulp-debug');
 
 try {
     var lambda_config = require(path.join(__dirname,'lambda_config.json'));
@@ -92,6 +96,11 @@ gulp.task("update-config", function(next){
     });
 });
 
+gulp.task("build-code", function(next){
+    return buildLambdaSrc()
+        .pipe(gulp.dest('dist'));
+});
+
 gulp.task("update-code", function(next){
     buildLambdaZip(function(zip) {
         var lambda = new AWS.Lambda({ region: lambda_config.Region });
@@ -134,12 +143,40 @@ function checkConfig(){
     }
 }
 
+var globs = {
+  src: 'src/**/*',
+  userjs: ['**/*.js', '!**/node_modules/**'],
+  // node_modules: ['**/node_modules/**/*.js', '!**/node_modules/bl/test/test.js']
+  node_modules: ['**/node_modules/**/*.js', '!**/node_modules/core-js/**', '!**/node_modules/babel**']
+};
+
+function buildLambdaSrc(){
+    var userJsFilter = filter(globs.userjs, {restore:true});
+    var nodeModuleFilter = filter(globs.node_modules, {restore:true});
+
+    return gulp.src(globs.src)
+        //.pipe(debug({title: 'dragon:'}))
+
+        .pipe(userJsFilter)
+      		.pipe(sourcemaps.init())
+      		.pipe(babel({
+      			presets: ['es2015'],//, 'stage-3'],
+            plugins: ['syntax-async-functions', 'transform-regenerator']
+      		}))
+      		.pipe(sourcemaps.write('.'))
+        .pipe(userJsFilter.restore)
+
+        // Uglify doesn't appear to be able to cope with any babel modules.
+        // This is only to reduce the package size in any case.
+        
+        // .pipe(nodeModuleFilter)
+        // .pipe(debug())
+        //   .pipe(uglify())
+        // .pipe(nodeModuleFilter.restore);
+}
+
 function buildLambdaZip(next){
-    var jsFilter = filter('**/*.js', {restore:true});
-    gulp.src("src/**/*")
-        // .pipe(jsFilter)
-        // .pipe(uglify())
-        // .pipe(jsFilter.restore)
+    buildLambdaSrc()
         .pipe(zip(lambda_config.ConfigOptions.FunctionName+".zip"))
         .pipe(data(function(data) {
             next(data.contents);

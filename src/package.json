@@ -9,9 +9,10 @@
     }
   ],
   "dependencies": {
-    "async": "^1.5.1",
+    "babel-polyfill": "^6.3.13",
+    "bluebird": "^3.1.1",
     "gm": "^1.21.1",
-    "request": "^2.67.0",
+    "source-map-support": "^0.4.0",
     "util": "^0.10.3"
   }
 }

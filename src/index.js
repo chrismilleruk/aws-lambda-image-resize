@@ -1,17 +1,24 @@
-var AWS = require('aws-sdk')
-    , async   = require('async')
-    , gm      = require('gm').subClass({ imageMagick: true }) // Enable ImageMagick integration.
-    , util    = require('util')
-    , request = require('request');
+
+import "source-map-support";
+import Promise from 'bluebird';
+import "babel-polyfill";
+
+import AWS from 'aws-sdk';
+import util from 'util';
+
+// import gm from 'gm';
+const imageMagick = require('gm').subClass({ imageMagick: true }); // Enable ImageMagick integration.
+
+console.log("init Started");
 
 // constants
-var MAX_WIDTH  = 100
-  , MAX_HEIGHT = 100;
+const MAX_WIDTH  = 100,
+  MAX_HEIGHT = 100;
 
 // get reference to S3 client
 var s3 = new AWS.S3();
 
-exports.handler = function(event, context) {
+exports.handler = (event, context) => {
   // Read options from the event.
   console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
   var srcBucket = event.Records[0].s3.bucket.name;
@@ -40,76 +47,81 @@ exports.handler = function(event, context) {
   }
 
   // Download the image from S3, transform, and upload to a different S3 bucket.
-  async.waterfall([
-    function download(next) {
-      // Download the image from S3 into a buffer.
-      s3.getObject({
+  process(srcBucket, srcKey, dstBucket, dstKey, imageType, context);
+};
+
+async function process(srcBucket, srcKey, dstBucket, dstKey, imageType, context) {
+  var previewUrl;
+
+  try {
+    const promisify = Promise.fromCallback;
+
+    let getObjectArgs = {
         Bucket : srcBucket,
         Key    : srcKey
-      }, next);
-    },
-    function tranform(response, next) {
-      gm(response.Body).size(function(err, size) {
-        // Infer the scaling factor to avoid stretching the image unnaturally.
-        var scalingFactor = Math.min(
-          MAX_WIDTH / size.width,
-          MAX_HEIGHT / size.height
-        );
-        var width  = scalingFactor * size.width;
-        var height = scalingFactor * size.height;
+      };
 
-        // Transform the image buffer in memory.
-        this.resize(width, height)
-          .toBuffer(imageType, function(err, buffer) {
-            if (err) {
-              next(err);
-            } else {
-              next(null, response.ContentType, buffer);
-            }
-          });
-      });
-    },
-    function upload(contentType, data, next) {
-      console.log('upload', dstBucket, dstKey, contentType, data.length);
-      // Stream the transformed image to a different S3 bucket.
-      s3.putObject({
-        Bucket      : dstBucket,
-        Key         : dstKey,
-        Body        : data,
-        ContentType : contentType
-      }, next);
-    },
-    function presign(data, next) {
-      console.log('presign', data);
+    let response = await promisify((next) => s3.getObject(getObjectArgs, next));
 
-      // Get a presigned URL valid for 15 mins.
-      s3.getSignedUrl('getObject', {
-        Bucket      : dstBucket,
-        Key         : dstKey
-      }, next);
-    }],
-    function (err, url) {
-      if (err) {
-        console.error(
-          'Unable to resize ' + srcBucket + '/' + srcKey +
-          ' and upload to ' + dstBucket + '/' + dstKey +
-          ' due to an error: ' + err
-        );
-        context.fail(err);
-      } else {
-        console.log(
-          'Successfully resized ' + srcBucket + '/' + srcKey +
-          ' and uploaded to ' + dstBucket + '/' + dstKey
-        );
+    console.log('start ImageMagick', response);
 
-        context.succeed({
-          srcBucket: srcBucket,
-          srcKey: srcKey,
-          dstBucket: dstBucket,
-          dstKey: dstKey,
-          url: url
-        });
-      }
-    }
+    let image = imageMagick(response.Body);
+    let contentType = response.ContentType;
+
+    console.log('image', image);
+
+    let size = await promisify((next) => image.size(next));
+
+    // Infer the scaling factor to avoid stretching the image unnaturally.
+    let scalingFactor = Math.min(
+      MAX_WIDTH / size.width,
+      MAX_HEIGHT / size.height
+    );
+    let width  = scalingFactor * size.width;
+    let height = scalingFactor * size.height;
+
+    // Transform the image buffer in memory.
+    let buffer = await promisify((next) => image.resize(width, height).toBuffer(imageType, next));
+
+    console.log('resized', dstBucket, dstKey, contentType, buffer.length);
+
+    // Stream the transformed image to a different S3 bucket.
+    await promisify((next) => s3.putObject({
+      Bucket      : dstBucket,
+      Key         : dstKey,
+      Body        : buffer,
+      ContentType : contentType
+    }, next));
+
+    // Get a presigned URL valid for 15 mins.
+    previewUrl = await promisify((next) => s3.getSignedUrl('getObject', {
+      Bucket      : dstBucket,
+      Key         : dstKey
+    }, next));
+
+  } catch (err) {
+
+    console.error(
+      'Unable to resize ' + srcBucket + '/' + srcKey +
+      ' and upload to ' + dstBucket + '/' + dstKey +
+      ' due to an error: ' + err
+    );
+    context.fail(err);
+    return;
+  }
+
+  console.log(
+    'Successfully resized ' + srcBucket + '/' + srcKey +
+    ' and uploaded to ' + dstBucket + '/' + dstKey
   );
-};
+
+  console.info(previewUrl);
+
+  context.succeed({
+    srcBucket: srcBucket,
+    srcKey: srcKey,
+    dstBucket: dstBucket,
+    dstKey: dstKey,
+    url: previewUrl
+  });
+}
