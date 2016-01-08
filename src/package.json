@@ -8,11 +8,17 @@
       "email": "chrismilleruk@gmail.com"
     }
   ],
+  "engines": {
+    "node": "~0.10.36"
+  },
   "dependencies": {
-    "babel-polyfill": "^6.3.13",
+    "babel-runtime": "^6.3.19",
     "bluebird": "^3.1.1",
     "gm": "^1.21.1",
     "source-map-support": "^0.4.0",
     "util": "^0.10.3"
+  },
+  "peerDependencies": {
+    "aws-sdk": "^2.2.16"
   }
 }

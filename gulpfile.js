@@ -13,7 +13,7 @@ var gulp = require('gulp'),
     sourcemaps = require('gulp-sourcemaps'),
     babel = require('gulp-babel');
 
-var debug = require('gulp-debug');
+// var debug = require('gulp-debug');
 
 try {
     var lambda_config = require(path.join(__dirname,'lambda_config.json'));
@@ -160,8 +160,8 @@ function buildLambdaSrc(){
         .pipe(userJsFilter)
       		.pipe(sourcemaps.init())
       		.pipe(babel({
-      			presets: ['es2015'],//, 'stage-3'],
-            plugins: ['syntax-async-functions', 'transform-regenerator']
+      			presets: ['es2015', 'stage-0'],
+            plugins: ['transform-runtime']
       		}))
       		.pipe(sourcemaps.write('.'))
         .pipe(userJsFilter.restore)

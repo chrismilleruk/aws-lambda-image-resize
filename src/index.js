@@ -1,12 +1,10 @@
 
-import "source-map-support";
+import "source-map-support/register";
 import Promise from 'bluebird';
-import "babel-polyfill";
 
 import AWS from 'aws-sdk';
 import util from 'util';
 
-// import gm from 'gm';
 const imageMagick = require('gm').subClass({ imageMagick: true }); // Enable ImageMagick integration.
 
 console.log("init Started");
